@@ -12,9 +12,9 @@ using namespace std;
 
 //Function Prototypes here
 vector<vector<int>> classical(vector<vector<int>>, vector<vector<int>>);
-void divideConquer();
-vector<vector<int>> divider();
-vector<vector<int>> adder();
+vector<vector<int>> divideConquer(vector<vector<int>>, vector<vector<int>>);
+vector<vector<int>> divider(vector<vector<int>>, int, int, int, int);
+vector<vector<int>> adder(vector<vector<int>>, vector<vector<int>>);
 //void strassen();
 void printMatrix(vector<vector<int>>);
 
@@ -22,10 +22,10 @@ int main()
 {
 
     vector<vector<int>> m;
-    for (int i = 1; i <= 3; i++)
+    for (int i = 1; i <= 4; i++)
     {
         vector<int> temp;
-        for (int j = 1; j <= 3; j++)
+        for (int j = 1; j <= 4; j++)
         {
             temp.push_back(j * i);
         }
@@ -33,6 +33,8 @@ int main()
     }
 
     classical(m, m);
+    cout << endl;
+    printMatrix(divideConquer(m, m));
 
     return 0;
 }
@@ -68,32 +70,69 @@ vector<vector<int>> classical(vector<vector<int>> m1, vector<vector<int>> m2)
     return resultMatrix;
 }
 
-void divideConquer(vector<vector<int>> a, vector<vector<int>> b)
+vector<vector<int>> divideConquer(vector<vector<int>> a, vector<vector<int>> b)
 {
     int n = a.size();
-    vector<vector<int>> resultMatrix;
-    
-    //Dividing phase, seperating a into 4 quadrants
-    vector<vector<int>> a11 = divider(a, 0, n/2, 0, a.at(0).size()/2);
-    vector<vector<int>> a12 = divider(a, (a.size() / 2) + 1, a.size(), 0, a.at(0).size() / 2);
-    vector<vector<int>> a21 = divider(a, 0, a.size() / 2, (a.at(0).size() / 2) + 1, a.at(0).size());
-    vector<vector<int>> a22 = divider(a, (a.size() / 2) + 1, a.size(), (a.at(0).size() / 2) + 1, a.at(0).size());
-    
-    //Dividing phaes, seperating b into 4 quadrants
-    vector<vector<int>> b11 = divider(b, 0, b.size() / 2, 0, b.at(0).size() / 2);
-    vector<vector<int>> b12 = divider(b, (b.size() / 2) + 1, b.size(), 0, b.at(0).size() / 2);
-    vector<vector<int>> b21 = divider(b, 0, b.size() / 2, (b.at(0).size() / 2) + 1, b.at(0).size());
-    vector<vector<int>> b22 = divider(b, (b.size() / 2) + 1, b.size(), (b.at(0).size() / 2) + 1, b.at(0).size());
+    vector<vector<int>> c;
 
-    //Computing each of the c quadrants
-    vector<vector<int>> c11 = adder(classical(a11, b11), classical(a12, b21), 1);
-    vector<vector<int>> c12 = adder(classical(a11, b12), classical(a12, b22), 1);
-    vector<vector<int>> c21 = adder(classical(a21, b11), classical(a22, b21), 1);
-    vector<vector<int>> c22 = adder(classical(a21, b12), classical(a22, b22), 1);
+    if (n == 1)
+    {
+        c.resize(n);
+        c.at(0).push_back(a.at(0).at(0) * b.at(0).at(0));
+    }
+    else
+    {
+        //Dividing phase, seperating a into 4 quadrants
+        vector<vector<int>> a11 = divider(a, 0, n / 2, 0, n / 2);
+        vector<vector<int>> a21 = divider(a, (n / 2), n, 0, n / 2);
+        vector<vector<int>> a12 = divider(a, 0, n / 2, (n / 2), n);
+        vector<vector<int>> a22 = divider(a, (n / 2), n, (n / 2), n);
 
-    //Merging each of the quadrants in the resultMatrix
-    
+        //Dividing phase, seperating b into 4 quadrants
+        vector<vector<int>> b11 = divider(b, 0, n / 2, 0, n / 2);
+        vector<vector<int>> b21 = divider(b, (n / 2), b.size(), 0, n / 2);
+        vector<vector<int>> b12 = divider(b, 0, n / 2, (n / 2), n);
+        vector<vector<int>> b22 = divider(b, (n / 2), n, (n / 2), n);
 
+        //Computing each of the c quadrants
+        vector<vector<int>> c11 = adder(divideConquer(a11, b11), divideConquer(a12, b21));
+        vector<vector<int>> c12 = adder(divideConquer(a11, b12), divideConquer(a12, b22));
+        vector<vector<int>> c21 = adder(divideConquer(a21, b11), divideConquer(a22, b21));
+        vector<vector<int>> c22 = adder(divideConquer(a21, b12), divideConquer(a22, b22));
+
+        //Merge all the c quadrants back into c
+        for (int i = 0; i < n/2; i++)
+        {
+            vector<int> temp;
+            for (int j = 0; j < n / 2; j++)
+            {
+                temp.push_back(c11.at(i).at(j));
+            }
+
+            for (int j = 0; j < n/2; j++)
+            {
+                temp.push_back(c12.at(i).at(j));
+            }
+            c.push_back(temp);
+        }
+
+        for (int i = 0; i < n/2; i++)
+        {
+            vector<int> temp;
+            for (int j = 0; j < n / 2; j++)
+            {
+                temp.push_back(c21.at(i).at(j));
+            }
+
+            for (int j = 0; j < n / 2; j++)
+            {
+                temp.push_back(c22.at(i).at(j));
+            }
+            c.push_back(temp);
+        }
+    }
+ 
+    return c;
 }
 
 vector<vector<int>> divider(vector<vector<int>> a, int iStart, int iEnd, int jStart, int jEnd)
@@ -113,7 +152,7 @@ vector<vector<int>> divider(vector<vector<int>> a, int iStart, int iEnd, int jSt
     return smallMatrix;
 }
 
-vector<vector<int>> adder(vector<vector<int>> a, vector<vector<int>> b, int mult)
+vector<vector<int>> adder(vector<vector<int>> a, vector<vector<int>> b)
 {
     vector<vector<int>> sumMatrix;
 
@@ -123,7 +162,7 @@ vector<vector<int>> adder(vector<vector<int>> a, vector<vector<int>> b, int mult
         sumMatrix.at(i).resize(a.size());
         for (int j = 0; j < a.at(i).size(); j++)
         {
-            sumMatrix.at(i).at(j) = a.at(i).at(j) + (mult * b.at(i).at(j));
+            sumMatrix.at(i).at(j) = a.at(i).at(j) + b.at(i).at(j);
         }
     }
 
