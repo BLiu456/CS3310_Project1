@@ -8,14 +8,16 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <cmath>
 using namespace std;
 
 //Function Prototypes here
 vector<vector<int>> classical(vector<vector<int>>, vector<vector<int>>);
 vector<vector<int>> divideConquer(vector<vector<int>>, vector<vector<int>>);
+void strassen(vector<vector<int>>, vector<vector<int>>, vector<vector<int>>&);
 vector<vector<int>> divider(vector<vector<int>>, int, int, int, int);
-vector<vector<int>> adder(vector<vector<int>>, vector<vector<int>>);
-//void strassen();
+vector<vector<int>> adder(vector<vector<int>>, vector<vector<int>>, int);
+
 void printMatrix(vector<vector<int>>);
 
 int main()
@@ -36,6 +38,9 @@ int main()
     cout << endl;
     printMatrix(divideConquer(m, m));
 
+    vector<vector<int>> c;
+    strassen(m, m, c);
+    printMatrix(c);
     return 0;
 }
 
@@ -56,7 +61,7 @@ vector<vector<int>> classical(vector<vector<int>> m1, vector<vector<int>> m2)
             }
         }
     }
-
+   
     for (int i = 0; i < resultMatrix.size(); i++)
     {
         for (int j = 0; j < resultMatrix.size(); j++)
@@ -95,10 +100,10 @@ vector<vector<int>> divideConquer(vector<vector<int>> a, vector<vector<int>> b)
         vector<vector<int>> b22 = divider(b, (n / 2), n, (n / 2), n);
 
         //Computing each of the c quadrants
-        vector<vector<int>> c11 = adder(divideConquer(a11, b11), divideConquer(a12, b21));
-        vector<vector<int>> c12 = adder(divideConquer(a11, b12), divideConquer(a12, b22));
-        vector<vector<int>> c21 = adder(divideConquer(a21, b11), divideConquer(a22, b21));
-        vector<vector<int>> c22 = adder(divideConquer(a21, b12), divideConquer(a22, b22));
+        vector<vector<int>> c11 = adder(divideConquer(a11, b11), divideConquer(a12, b21), 1);
+        vector<vector<int>> c12 = adder(divideConquer(a11, b12), divideConquer(a12, b22), 1);
+        vector<vector<int>> c21 = adder(divideConquer(a21, b11), divideConquer(a22, b21), 1);
+        vector<vector<int>> c22 = adder(divideConquer(a21, b12), divideConquer(a22, b22), 1);
 
         //Merge all the c quadrants back into c
         for (int i = 0; i < n/2; i++)
@@ -135,6 +140,87 @@ vector<vector<int>> divideConquer(vector<vector<int>> a, vector<vector<int>> b)
     return c;
 }
 
+void strassen(vector<vector<int>> a, vector<vector<int>> b, vector<vector<int>>& c)
+{
+    int n = a.size();
+    vector<vector<int>> c11;
+    vector<vector<int>> c12;
+    vector<vector<int>> c21;
+    vector<vector<int>> c22;
+
+    if (n == 2)
+    {
+        c.resize(2);
+        c.at(0).resize(2);
+        c.at(1).resize(2);
+
+        c.at(0).at(0) = (a.at(0).at(0) * b.at(0).at(0)) + (a.at(0).at(1) * b.at(1).at(0));
+        c.at(0).at(1) = (a.at(0).at(0) * b.at(0).at(1)) + (a.at(0).at(1) * b.at(1).at(1));
+        c.at(1).at(0) = (a.at(1).at(0) * b.at(0).at(0)) + (a.at(1).at(1) * b.at(1).at(0));
+        c.at(1).at(1) = (a.at(1).at(0) * b.at(0).at(1)) + (a.at(1).at(1) * b.at(1).at(1));
+        
+    }
+    else
+    {
+        //Dividing phase, seperating a into 4 quadrants
+        vector<vector<int>> a11 = divider(a, 0, n / 2, 0, n / 2);
+        vector<vector<int>> a21 = divider(a, (n / 2), n, 0, n / 2);
+        vector<vector<int>> a12 = divider(a, 0, n / 2, (n / 2), n);
+        vector<vector<int>> a22 = divider(a, (n / 2), n, (n / 2), n);
+
+        //Dividing phase, seperating b into 4 quadrants
+        vector<vector<int>> b11 = divider(b, 0, n / 2, 0, n / 2);
+        vector<vector<int>> b21 = divider(b, (n / 2), b.size(), 0, n / 2);
+        vector<vector<int>> b12 = divider(b, 0, n / 2, (n / 2), n);
+        vector<vector<int>> b22 = divider(b, (n / 2), n, (n / 2), n);
+
+        vector<vector<int>> p, q, r, s, t, u, v;
+        strassen(adder(a11, a22, 1), adder(b11, b22, 1), p);
+        strassen(adder(a21, a22, 1), b11, q);
+        strassen(a11, adder(b12, b22, -1), r);
+        strassen(a22, adder(b21, b11, -1), s);
+        strassen(adder(a11, a12, 1), b22, t);
+        strassen(adder(a21, a11, -1), adder(b11, b12, 1), u);
+        strassen(adder(a12, a22, -1), adder(b21, b22, 1), v);
+
+        vector<vector<int>> c11 = adder(adder(adder(p, s, 1), t, -1), v, 1); //This is doing c11 = ((p + s) - t) + v
+        vector<vector<int>> c12 = adder(r, t, 1); //c12 = r + t
+        vector<vector<int>> c21 = adder(q, s, 1); //c21 = q + s
+        vector<vector<int>> c22 = adder(adder(adder(p, r, 1), q, -1), u, 1); //This is doing c22 = ((p + r) - q) + u
+        
+        //Merge all the c quadrants back into c
+        for (int i = 0; i < n / 2; i++)
+        {
+            vector<int> temp;
+            for (int j = 0; j < n / 2; j++)
+            {
+                temp.push_back(c11.at(i).at(j));
+            }
+
+            for (int j = 0; j < n / 2; j++)
+            {
+                temp.push_back(c12.at(i).at(j));
+            }
+            c.push_back(temp);
+        }
+
+        for (int i = 0; i < n / 2; i++)
+        {
+            vector<int> temp;
+            for (int j = 0; j < n / 2; j++)
+            {
+                temp.push_back(c21.at(i).at(j));
+            }
+
+            for (int j = 0; j < n / 2; j++)
+            {
+                temp.push_back(c22.at(i).at(j));
+            }
+            c.push_back(temp);
+        }
+    }
+}
+
 vector<vector<int>> divider(vector<vector<int>> a, int iStart, int iEnd, int jStart, int jEnd)
 {
     vector<vector<int>> smallMatrix;
@@ -152,7 +238,7 @@ vector<vector<int>> divider(vector<vector<int>> a, int iStart, int iEnd, int jSt
     return smallMatrix;
 }
 
-vector<vector<int>> adder(vector<vector<int>> a, vector<vector<int>> b)
+vector<vector<int>> adder(vector<vector<int>> a, vector<vector<int>> b, int mult)
 {
     vector<vector<int>> sumMatrix;
 
@@ -162,7 +248,7 @@ vector<vector<int>> adder(vector<vector<int>> a, vector<vector<int>> b)
         sumMatrix.at(i).resize(a.size());
         for (int j = 0; j < a.at(i).size(); j++)
         {
-            sumMatrix.at(i).at(j) = a.at(i).at(j) + b.at(i).at(j);
+            sumMatrix.at(i).at(j) = a.at(i).at(j) + (mult * b.at(i).at(j));
         }
     }
 
