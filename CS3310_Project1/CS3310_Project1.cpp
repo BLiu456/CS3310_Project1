@@ -7,41 +7,250 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
-#include <cmath>
+#include <stdlib.h>
+#include <ctime>
+#include <chrono>
 using namespace std;
+using namespace std::chrono;
 
 //Function Prototypes here
+void getMatrixMan(vector<vector<int>>&, vector<vector<int>>&);
+void getMatrixFile(vector<vector<int>>&, vector<vector<int>>&);
+void getMatrixRand(vector<vector<int>>&, vector<vector<int>>&);
 vector<vector<int>> classical(vector<vector<int>>, vector<vector<int>>);
 vector<vector<int>> divideConquer(vector<vector<int>>, vector<vector<int>>);
 void strassen(vector<vector<int>>, vector<vector<int>>, vector<vector<int>>&);
 vector<vector<int>> divider(vector<vector<int>>, int, int, int, int);
 vector<vector<int>> adder(vector<vector<int>>, vector<vector<int>>, int);
-
 void printMatrix(vector<vector<int>>);
 
 int main()
 {
+    vector<vector<int>> a, b, r1, r2, r3;
+    int op;
+    cout << "---Square Matrix Multiplication Algorithms---\n";
+    cout << "Choose an option:\n"
+        << "(1) Enter the matrices manually\n"
+        << "(2) Load a file of the matrices\n"
+        << "(3) Generate random matrices\n"
+        << "(4) Exit\n"
+        << "Enter: ";
+    cin >> op;
 
-    vector<vector<int>> m;
-    for (int i = 1; i <= 4; i++)
+    switch (op)
     {
-        vector<int> temp;
-        for (int j = 1; j <= 4; j++)
-        {
-            temp.push_back(j * i);
-        }
-        m.push_back(temp);
+    case 1:
+        getMatrixMan(a, b);
+        break;
+    case 2:
+        getMatrixFile(a, b);
+        cout << "Contents of matrix A:\n";
+        printMatrix(a);
+        cout << "\nContents of matrix B:\n";
+        printMatrix(b);
+        break;
+    case 3:
+        getMatrixRand(a, b);
+        cout << "Contents of matrix A:\n";
+        printMatrix(a);
+        cout << "\nContents of matrix B:\n";
+        printMatrix(b);
+        break;
+    case 4:
+        cout << "Exit has been selected, ending program\n";
+        return 0;
+    default:
+        cout << "Valid option not selected, ending program.\n";
+        return 0;
     }
 
-    classical(m, m);
+    auto start = high_resolution_clock::now();
+    r1 = classical(a, b);
+    auto end = high_resolution_clock::now();
+    auto timeClassic = duration_cast<microseconds>(end - start);
+    cout << "\nClassical Matrix Multiplication result:\n";
+    printMatrix(r1);
     cout << endl;
-    printMatrix(divideConquer(m, m));
+    r1 = vector<vector<int>>(); //Freeing up space
 
-    vector<vector<int>> c;
-    strassen(m, m, c);
-    printMatrix(c);
+    start = high_resolution_clock::now();
+    r2 = divideConquer(a, b);
+    end = high_resolution_clock::now();
+    auto timeDaC = duration_cast<microseconds>(end - start);
+    cout << "\nDivide and Conquer result:\n";
+    printMatrix(r2);
+    cout << endl;
+    r2 = vector<vector<int>>(); //Freeing up space
+
+    start = high_resolution_clock::now();
+    strassen(a, b, r3);
+    end = high_resolution_clock::now();
+    auto timeStrassen = duration_cast<microseconds>(end - start);
+    cout << "\nStrassen result:\n";
+    printMatrix(r3);
+    cout << endl;
+    r3 = vector<vector<int>>(); //Freeing up space
+
+    cout << "Time elapsed for Classical: " << timeClassic.count() << " microseconds" << endl;
+    cout << "Time elapsed for Divide and Conquer: " << timeDaC.count() << " microseconds" << endl;
+    cout << "Time elapsed for Strassen: " << timeStrassen.count() << " microseconds" << endl;
     return 0;
+}
+
+void getMatrixMan(vector<vector<int>>& a, vector<vector<int>>& b)
+{
+    int n = 2; //2 as default size
+    cout << "\nEnter size of square matrices: ";
+    cin >> n;
+    cin.clear();
+    cin.ignore(INT_MAX, '\n');
+
+    a.resize(n);
+    string rowData, hold;
+    cout << "Enter the values of matrix A row by row:\n";
+    for (int i = 0; i < n; i++)
+    {
+        a.at(i).resize(n);
+        getline(cin, rowData);
+        istringstream ss(rowData);
+        for (int j = 0; j < n; j++)
+        {
+            ss >> hold;
+            a.at(i).at(j) = stoi(hold);
+        }
+    }
+
+    b.resize(n);
+    cout << "Enter the values of matrix B row by row:\n";
+    for (int i = 0; i < n; i++)
+    {
+        b.at(i).resize(n);
+        getline(cin, rowData);
+        istringstream ss(rowData);
+        for (int j = 0; j < n; j++)
+        {
+            ss >> hold;
+            b.at(i).at(j) = stoi(hold);
+        }
+    }
+}
+
+void getMatrixFile(vector<vector<int>>& a, vector<vector<int>>& b)
+{
+    string filenameA = "", filenameB = "", rowData = "", hold = "";
+
+    cout << "\nEnter file name for matrix A: ";
+    cin >> filenameA;
+    cout << "Enter file name for matrix B: ";
+    cin >> filenameB;
+
+    ifstream matrixFile;
+    matrixFile.open(filenameA);
+    if (!matrixFile)
+    {
+        cout << "Could not open file for matrix A, ending program." << endl;
+        return;
+    }
+
+    while (!matrixFile.eof())
+    {
+        getline(matrixFile, rowData);
+        istringstream ss(rowData);
+        vector<int> temp;
+
+        while (ss >> hold)
+        {
+            temp.push_back(stoi(hold));
+        }
+
+        a.push_back(temp);
+    }
+
+    matrixFile.close();
+
+    matrixFile.open(filenameB);
+    if (!matrixFile)
+    {
+        cout << "Could not open file for matrix B, ending program." << endl;
+        return;
+    }
+
+    while (!matrixFile.eof())
+    {
+        getline(matrixFile, rowData);
+        istringstream ss(rowData);
+        vector<int> temp;
+
+        while (ss >> hold)
+        {
+            temp.push_back(stoi(hold));
+        }
+
+        b.push_back(temp);
+    }
+
+    matrixFile.close();
+}
+
+void getMatrixRand(vector<vector<int>>& a, vector<vector<int>>& b)
+{
+    int n = 2; //2 as default size
+    cout << "Enter size of square matrices: ";
+    cin >> n;
+
+    srand(time(0));
+    
+    ofstream matrixFile("randMatrixA.txt");
+    a.resize(n);
+    for (int i = 0; i < n; i++)
+    {
+        a.at(i).resize(n);
+        for (int j = 0; j < n; j++)
+        {
+            int r = rand() % 100; //Generating a random number from 0 to 99
+            a.at(i).at(j) = r;
+
+            matrixFile << r;
+
+            if (j != n - 1)
+            {
+                matrixFile << " ";
+            }
+        }
+
+        if (i != n - 1)
+        {
+            matrixFile << "\n";
+        }   
+    }
+    matrixFile.close();
+
+    matrixFile.open("randMatrixB.txt");
+    b.resize(n);
+    for (int i = 0; i < n; i++)
+    {
+        b.at(i).resize(n);
+        for (int j = 0; j < n; j++)
+        {
+            int r = rand() % 100; //Generating a random number from 0 to 99
+            b.at(i).at(j) = r;
+
+            matrixFile << r;
+
+            if (j != n - 1)
+            {
+                matrixFile << " ";
+            }
+        }
+
+        if (i != n - 1)
+        {
+            matrixFile << "\n";
+        }
+    }
+    matrixFile.close();
 }
 
 vector<vector<int>> classical(vector<vector<int>> m1, vector<vector<int>> m2)
@@ -62,16 +271,6 @@ vector<vector<int>> classical(vector<vector<int>> m1, vector<vector<int>> m2)
         }
     }
    
-    for (int i = 0; i < resultMatrix.size(); i++)
-    {
-        for (int j = 0; j < resultMatrix.size(); j++)
-        {
-            cout << resultMatrix.at(i).at(j) << " ";;
-        }
-
-        cout << endl;
-    }
-
     return resultMatrix;
 }
 
@@ -95,10 +294,10 @@ vector<vector<int>> divideConquer(vector<vector<int>> a, vector<vector<int>> b)
 
         //Dividing phase, seperating b into 4 quadrants
         vector<vector<int>> b11 = divider(b, 0, n / 2, 0, n / 2);
-        vector<vector<int>> b21 = divider(b, (n / 2), b.size(), 0, n / 2);
+        vector<vector<int>> b21 = divider(b, (n / 2), n, 0, n / 2);
         vector<vector<int>> b12 = divider(b, 0, n / 2, (n / 2), n);
         vector<vector<int>> b22 = divider(b, (n / 2), n, (n / 2), n);
-
+        
         //Computing each of the c quadrants
         vector<vector<int>> c11 = adder(divideConquer(a11, b11), divideConquer(a12, b21), 1);
         vector<vector<int>> c12 = adder(divideConquer(a11, b12), divideConquer(a12, b22), 1);
@@ -143,10 +342,6 @@ vector<vector<int>> divideConquer(vector<vector<int>> a, vector<vector<int>> b)
 void strassen(vector<vector<int>> a, vector<vector<int>> b, vector<vector<int>>& c)
 {
     int n = a.size();
-    vector<vector<int>> c11;
-    vector<vector<int>> c12;
-    vector<vector<int>> c21;
-    vector<vector<int>> c22;
 
     if (n == 2)
     {
